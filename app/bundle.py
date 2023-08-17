@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import os
 from pathlib import Path
 import re
+import subprocess
 import tarfile
 
 import click
@@ -13,6 +13,10 @@ from tqdm import tqdm
 
 
 MIRROR_URL = 'https://mirror.openshift.com/pub/openshift-v4/clients/'
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'],
+    max_content_width=100,
+)
 
 colorlog.basicConfig(
     format='%(log_color)s%(levelname)s%(reset)s:%(asctime)s:%(name)s:%(message)s',
@@ -32,9 +36,10 @@ class Bundle():
         self.version_dir = Path(self.output_dir).joinpath(self.real_openshift_version)
         self.download_dir = Path(self.version_dir).joinpath('download')
         self.binaries_dir = Path(self.version_dir).joinpath('bin')
-        self._pull_secret = None
-
+        self.docker_config_dir = Path.home().joinpath('.docker')
         self.make_output_dirs()
+
+        self._pull_secret = None
 
     @property
     def pull_secret(self) -> str:
@@ -44,9 +49,8 @@ class Bundle():
         return self._pull_secret
 
     def make_output_dirs(self) -> None:
-        for directory in [self.version_dir, self.download_dir, self.binaries_dir]:
-            if not directory.is_dir():
-                os.makedirs(directory)
+        for directory in [self.version_dir, self.download_dir, self.binaries_dir, self.docker_config_dir]:
+            directory.mkdir(parents=True, exist_ok=True)
 
     def download_with_progress_bar(self, url: str, filename: str) -> None:
         try:
@@ -76,23 +80,28 @@ class Bundle():
 
     def extract_binaries(self, filename: str, binaries: list) -> None:
         if binaries:
-            logger.info(f'Extracting {binaries} from {filename}')
+            logger.info(f'Extracting <{", ".join(binaries)}> from {filename}')
         else:
             logger.info(f'Extracting {filename}')
 
-        def files_to_extract(members):
-            for tarinfo in members:
+        def extract(tar):
+            for name in tar.getnames():
+                output_path = Path(self.binaries_dir).joinpath(name)
                 if binaries:
-                    if tarinfo.name in binaries:
-                        yield tarinfo
+                    if name in binaries:
+                        if output_path.is_file():
+                            logger.info(f'File already extracted {output_path}, skipping')
+                        else:
+                            tar.extract(name, path=self.binaries_dir)
                 else:
-                    yield tarinfo
+                    if output_path.is_file():
+                        logger.info(f'File already extracted {output_path}, skipping')
+                    else:
+                        tar.extract(name, path=self.binaries_dir)
 
-        tar = tarfile.open(str(Path(self.download_dir).joinpath(filename)))
-        tar.extractall(str(self.binaries_dir), members=files_to_extract(tar))
-        tar.close()
-
-        logger.info(f'{filename} extracting complete')
+        # with tarfile.open(str(Path(self.download_dir).joinpath(filename))) as tar:
+        #     extract(tar)
+        logger.info(f'Extracting complete for {filename}')
 
     def download_installer(self) -> None:
         filename = 'openshift-install-linux.tar.gz'
@@ -117,11 +126,47 @@ class Bundle():
                                     url=urljoin(MIRROR_URL, 'mirror-registry/latest/mirror-registry.tar.gz'))
         self.extract_binaries(filename, None)
 
+    def mirror_images(self) -> None:
+        docker_config = Path(self.docker_config_dir).joinpath('config.json')
+        imageset_config = Path(self.version_dir).joinpath('imageset-config.yaml')
+
+        logger.info(f'Writing pull secret to {docker_config}')
+        docker_config.write_text(self.pull_secret)
+
+        cmd_env = {
+            'PATH': f'{self.binaries_dir}:$PATH',
+            'HOME': str(Path.home()),
+        }
+
+        logger.info('Generating the image set configuration (this may take a few minutes)')
+        mirror_init = subprocess.run(
+            [
+                'oc',
+                'mirror',
+                'init'
+            ], env=cmd_env, capture_output=True
+        )
+
+        logger.info(f'Saving the image set configuration to {imageset_config}')
+        imageset_config.write_bytes(mirror_init.stdout)
+
+        logger.info(f'Mirroring images using config {imageset_config} (grab a coffee, this will take a while)')
+        mirror = subprocess.run(
+            [
+                'oc',
+                'mirror',
+                '--config',
+                imageset_config, f'file://{self.version_dir}',
+            ], env=cmd_env
+        )
+
     def bundle(self) -> None:
         self.download_installer()
         self.download_clients()
         self.download_oc_mirror()
         self.download_mirror_registry()
+        self.mirror_images()
+        logger.info('Completed bundle')
 
     def _release_info(self) -> str:
         version_url = self.openshift_version
@@ -156,18 +201,34 @@ class Bundle():
         return real_version
 
 
-@click.command()
-@click.option('--openshift-version', prompt='OpenShift Version', default='latest',
+@click.command(context_settings=CONTEXT_SETTINGS)
+@click.option('--openshift-version', prompt='OpenShift Version',
+              required=True, default='latest',
               help='The version of OpenShift (e.g. 4.12, 4.12.23, latest) you would like to create an air-gapped package for')
-@click.option('--output-dir', prompt='Output Directory',
+@click.option('--pull-secret', required=False,
+              help='The pull secret used to pull images from Red Hat')
+@click.option('--output-dir', prompt='Output Directory', required=True,
               help='The directory to output the content needed for an air-gapped install')
-@click.help_option('--help', '-h')
-def main(openshift_version, output_dir):
+def main(openshift_version, pull_secret, output_dir):
+    """Bundle all of the artifacts needed for an OpenShift 4 install in an
+    air-gapped cluster.
+
+    When prompted for your Pull Secret, it can be found at:
+    https://console.redhat.com/openshift/install/pull-secret
+    """
     pull_secret_path = Path(output_dir).joinpath('pull-secret.json')
-    if pull_secret_path.is_file():
-        logger.info(f'Using existing pull secret at {pull_secret_path}')
+
+    pull_secret_value = None
+    if pull_secret is not None:
+        if pull_secret_path.is_file():
+            logger.info(f'Overwriting existing pull secret at {pull_secret_path}')
+        pull_secret_value = pull_secret
+    elif pull_secret_path.is_file():
+        logger.info(f'Found existing pull secret at {pull_secret_path}')
     else:
-        pull_secret = click.prompt('Pull Secret')
+        pull_secret_value = click.prompt('Pull Secret')
+
+    if pull_secret_value is not None:
         pull_secret_path.write_text(pull_secret)
         logger.info(f'Saved pull secret to {pull_secret_path}')
 

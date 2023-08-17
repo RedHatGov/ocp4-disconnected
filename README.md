@@ -6,6 +6,10 @@
 podman build --layers --tag openshift4-airgap .
 ```
 
+## Pull Secret
+
+https://console.redhat.com/openshift/install/pull-secret
+
 ## Run Bundler
 
 ```bash
