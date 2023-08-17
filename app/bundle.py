@@ -229,7 +229,7 @@ def main(openshift_version, pull_secret, output_dir):
         pull_secret_value = click.prompt('Pull Secret')
 
     if pull_secret_value is not None:
-        pull_secret_path.write_text(pull_secret)
+        pull_secret_path.write_text(pull_secret_value)
         logger.info(f'Saved pull secret to {pull_secret_path}')
 
     b = Bundle(openshift_version, output_dir)
