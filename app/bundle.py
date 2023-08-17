@@ -99,8 +99,8 @@ class Bundle():
                     else:
                         tar.extract(name, path=self.binaries_dir)
 
-        # with tarfile.open(str(Path(self.download_dir).joinpath(filename))) as tar:
-        #     extract(tar)
+        with tarfile.open(str(Path(self.download_dir).joinpath(filename))) as tar:
+            extract(tar)
         logger.info(f'Extracting complete for {filename}')
 
     def download_installer(self) -> None:
