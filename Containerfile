@@ -1,6 +1,10 @@
-FROM registry.access.redhat.com/ubi9/python-311:latest
+FROM registry.access.redhat.com/ubi8/python-311:latest
 
 USER root
+
+RUN yum install --disablerepo=* --enablerepo=ubi-8-appstream-rpms --enablerepo=ubi-8-baseos-rpms -y \
+        yum-utils \
+    && rm -rf /var/cache/yum
 
 COPY --chown=1001:0 Pipfile Pipfile.lock /opt/app-root/src
 RUN pip3 install pipenv \
