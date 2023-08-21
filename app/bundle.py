@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 from pathlib import Path
 import re
 import subprocess
@@ -28,28 +29,28 @@ logger.setLevel(colorlog.DEBUG)
 
 
 class Bundle():
-    def __init__(self, openshift_version, output_dir) -> None:
+    def __init__(self, openshift_version, output_dir, pull_secret) -> None:
         self.openshift_version = openshift_version
-        self.output_dir = output_dir
+        self.output_dir = Path(output_dir)
+        self.pull_secret = pull_secret
 
         self.real_openshift_version = self._real_openshift_version()
-        self.version_dir = Path(self.output_dir).joinpath(self.real_openshift_version)
-        self.download_dir = Path(self.version_dir).joinpath('download')
-        self.binaries_dir = Path(self.version_dir).joinpath('bin')
+        self.yum_repos_dir = self.output_dir.joinpath('yum_repos')
+        self.version_dir = self.output_dir.joinpath(self.real_openshift_version)
+        self.download_dir = self.version_dir.joinpath('download')
+        self.binaries_dir = self.version_dir.joinpath('bin')
         self.docker_config_dir = Path.home().joinpath('.docker')
         self.make_output_dirs()
 
-        self._pull_secret = None
-
-    @property
-    def pull_secret(self) -> str:
-        if not self._pull_secret:
-            self._pull_secret = Path(self.output_dir).joinpath('pull-secret.json').read_text()
-
-        return self._pull_secret
-
     def make_output_dirs(self) -> None:
-        for directory in [self.version_dir, self.download_dir, self.binaries_dir, self.docker_config_dir]:
+        output_dirs = [
+            self.yum_repos_dir,
+            self.version_dir,
+            self.download_dir,
+            self.binaries_dir,
+            self.docker_config_dir,
+        ]
+        for directory in output_dirs:
             directory.mkdir(parents=True, exist_ok=True)
 
     def download_with_progress_bar(self, url: str, filename: str) -> None:
@@ -160,12 +161,30 @@ class Bundle():
             ], env=cmd_env
         )
 
+    def download_rpms(self) -> None:
+        logger.info('Downloading RPMs for podman and its dependencies')
+
+        p = subprocess.run(
+            [
+                '/usr/bin/repotrack',
+                '--disablerepo=*',
+                '--enablerepo=ubi-8-appstream-rpms',
+                '--enablerepo=ubi-8-baseos-rpms',
+                '--destdir',
+                self.yum_repos_dir,
+                'podman',
+            ]
+        )
+
+        logger.info('Completed RPM downloads')
+
     def bundle(self) -> None:
         self.download_installer()
         self.download_clients()
         self.download_oc_mirror()
         self.download_mirror_registry()
         self.mirror_images()
+        self.download_rpms()
         logger.info('Completed bundle')
 
     def _release_info(self) -> str:
@@ -201,14 +220,30 @@ class Bundle():
         return real_version
 
 
+def get_pull_secret(ctx, param, value):
+    output_path = Path(ctx.params['output_dir']).joinpath('pull-secret.json')
+
+    if output_path.is_file() and value is None:
+        return output_path.read_text()
+
+    if value is None:
+        pull_secret = click.prompt('Pull Secret')
+        return get_pull_secret(ctx, param, pull_secret)
+    else:
+        try:
+            json.loads(value)
+        except json.JSONDecodeError:
+            raise click.BadParameter('The pull secret specified is not valid JSON')
+        output_path.write_text(value)
+        return value
+
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('--openshift-version', prompt='OpenShift Version',
-              required=True, default='latest',
+@click.option('--openshift-version', prompt='OpenShift Version', required=True, default='latest',
               help='The version of OpenShift (e.g. 4.12, 4.12.23, latest) you would like to create an air-gapped package for')
-@click.option('--pull-secret', required=False,
-              help='The pull secret used to pull images from Red Hat')
-@click.option('--output-dir', prompt='Output Directory', required=True,
+@click.option('--output-dir', prompt='Output Directory', is_eager=True, required=True,
               help='The directory to output the content needed for an air-gapped install')
+@click.option('--pull-secret', required=False, callback=get_pull_secret,
+              help='The pull secret used to pull images from Red Hat')
 def main(openshift_version, pull_secret, output_dir):
     """Bundle all of the artifacts needed for an OpenShift 4 install in an
     air-gapped cluster.
@@ -216,23 +251,7 @@ def main(openshift_version, pull_secret, output_dir):
     When prompted for your Pull Secret, it can be found at:
     https://console.redhat.com/openshift/install/pull-secret
     """
-    pull_secret_path = Path(output_dir).joinpath('pull-secret.json')
-
-    pull_secret_value = None
-    if pull_secret is not None:
-        if pull_secret_path.is_file():
-            logger.info(f'Overwriting existing pull secret at {pull_secret_path}')
-        pull_secret_value = pull_secret
-    elif pull_secret_path.is_file():
-        logger.info(f'Found existing pull secret at {pull_secret_path}')
-    else:
-        pull_secret_value = click.prompt('Pull Secret')
-
-    if pull_secret_value is not None:
-        pull_secret_path.write_text(pull_secret_value)
-        logger.info(f'Saved pull secret to {pull_secret_path}')
-
-    b = Bundle(openshift_version, output_dir)
+    b = Bundle(openshift_version, output_dir, pull_secret)
     b.bundle()
 
 
