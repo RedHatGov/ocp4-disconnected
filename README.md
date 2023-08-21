@@ -3,7 +3,7 @@
 ## Build Container
 
 ```bash
-podman build --layers --tag openshift4-airgap .
+podman build --layers --tag openshift4-airgap --platform=linux/amd64 .
 ```
 
 ## Pull Secret
