@@ -245,8 +245,8 @@ def get_pull_secret(ctx, param, value):
 @click.option('--pull-secret', required=False, callback=get_pull_secret,
               help='The pull secret used to pull images from Red Hat')
 def main(openshift_version, pull_secret, output_dir):
-    """Bundle all of the artifacts needed for an OpenShift 4 install in an
-    air-gapped cluster.
+    """Bundle all of the artifacts needed for an OpenShift 4 install in a
+    disconnected / air-gapped environment.
 
     When prompted for your Pull Secret, it can be found at:
     https://console.redhat.com/openshift/install/pull-secret
