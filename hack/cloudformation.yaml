@@ -10,11 +10,6 @@ Description: >
   and is configured to allow access to the VPC.
 
 Parameters:
-  EnvironmentName:
-    Description: An environment name that is prefixed to resource names
-    Type: String
-    Default: ocp4-disconnected
-
   VpcCidr:
     Description: The IP range (CIDR notation) for this VPC
     Type: String
@@ -81,6 +76,16 @@ Parameters:
       - c5.large
       - c5.xlarge
 
+  JumpInstanceDataVolumeSize:
+    Description: The size of the data volume to attach to the Jump instance
+    Type: Number
+    Default: 100
+
+  HighSideInstanceDataVolumeSize:
+    Description: The size of the data volume to attach to the High Side instance
+    Type: Number
+    Default: 100
+
 Mappings:
   RegionMap:
     ap-south-1:
@@ -130,14 +135,14 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-vpc
+          Value: !Sub ${AWS::StackName}-vpc
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-igw
+          Value: !Sub ${AWS::StackName}-igw
 
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -158,7 +163,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-public
+          Value: !Sub ${AWS::StackName}-public
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -166,7 +171,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-public
+          Value: !Sub ${AWS::StackName}-public
 
   DefaultPublicRoute:
     Type: AWS::EC2::Route
@@ -195,7 +200,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !Select [0, !GetAZs  '']]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !Select [0, !GetAZs  '']]]
 
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
@@ -203,7 +208,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !GetAtt PrivateSubnet1.AvailabilityZone]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !GetAtt PrivateSubnet1.AvailabilityZone]]
 
   DefaultPrivateRoute1:
     Type: AWS::EC2::Route
@@ -228,7 +233,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !Select [1, !GetAZs  '']]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !Select [1, !GetAZs  '']]]
 
   PrivateRouteTable2:
     Type: AWS::EC2::RouteTable
@@ -236,7 +241,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !GetAtt PrivateSubnet2.AvailabilityZone]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !GetAtt PrivateSubnet2.AvailabilityZone]]
 
   DefaultPrivateRoute2:
     Type: AWS::EC2::Route
@@ -261,7 +266,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !Select [2, !GetAZs  '']]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !Select [2, !GetAZs  '']]]
 
   PrivateRouteTable3:
     Type: AWS::EC2::RouteTable
@@ -269,7 +274,7 @@ Resources:
       VpcId: !Ref Vpc
       Tags:
         - Key: Name
-          Value: !Join ["-", [!Ref EnvironmentName, "private", !GetAtt PrivateSubnet3.AvailabilityZone]]
+          Value: !Join ["-", [!Ref AWS::StackName, "private", !GetAtt PrivateSubnet3.AvailabilityZone]]
 
   DefaultPrivateRoute3:
     Type: AWS::EC2::Route
@@ -292,7 +297,7 @@ Resources:
   NatInstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${EnvironmentName}-nat-role
+      RoleName: !Sub ${AWS::StackName}-nat-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -319,7 +324,7 @@ Resources:
   NatInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ${EnvironmentName}-nat-profile
+      InstanceProfileName: !Sub ${AWS::StackName}-nat-profile
       Path: /
       Roles:
         - !Ref NatInstanceRole
@@ -352,7 +357,7 @@ Resources:
           CidrIp: !Ref VpcCidr
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-nat-sg
+          Value: !Sub ${AWS::StackName}-nat-sg
 
   NatInstanceWaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
@@ -380,7 +385,7 @@ Resources:
           SubnetId: !Ref PublicSubnet
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-nat
+          Value: !Sub ${AWS::StackName}-nat
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -492,7 +497,7 @@ Resources:
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-jump-sg
+          Value: !Sub ${AWS::StackName}-jump-sg
 
   JumpInstance:
     Type: AWS::EC2::Instance
@@ -507,9 +512,15 @@ Resources:
           GroupSet:
             - !Ref JumpInstanceSecurityGroup
           SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdh
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: true
+            VolumeSize: !Ref JumpInstanceDataVolumeSize
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-jump
+          Value: !Sub ${AWS::StackName}-jump
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -542,7 +553,7 @@ Resources:
   HighSideInstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${EnvironmentName}-highside-role
+      RoleName: !Sub ${AWS::StackName}-highside-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -579,7 +590,7 @@ Resources:
   HighSideInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Sub ${EnvironmentName}-highside-profile
+      InstanceProfileName: !Sub ${AWS::StackName}-highside-profile
       Path: /
       Roles:
         - !Ref HighSideInstanceRole
@@ -596,7 +607,7 @@ Resources:
           CidrIp: !Ref VpcCidr
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-highside-sg
+          Value: !Sub ${AWS::StackName}-highside-sg
 
   HighSideInstance:
     Type: AWS::EC2::Instance
@@ -611,9 +622,15 @@ Resources:
           GroupSet:
             - !Ref HighSideInstanceSecurityGroup
           SubnetId: !Ref PrivateSubnet1
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdh
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: true
+            VolumeSize: !Ref HighSideInstanceDataVolumeSize
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-highside
+          Value: !Sub ${AWS::StackName}-highside
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -641,7 +658,7 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Delete
     Properties:
-      BucketName: !If [GenerateS3BucketName, !Sub "${EnvironmentName}-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
+      BucketName: !If [GenerateS3BucketName, !Sub "${AWS::StackName}-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
 
 Outputs:
   Vpc:
