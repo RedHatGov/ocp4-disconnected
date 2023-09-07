@@ -20,7 +20,7 @@ expected on Apple silicon Macs.
 > yourself, but while this is under active development, that is not the case.
 
 ```bash
-podman build --layers --tag ocp4-disconnected --platform=linux/amd64 .
+podman build --layers --platform=linux/amd64 --tag ocp4-disconnected .
 ```
 
 ### Pull Secret
@@ -44,7 +44,8 @@ when you get ready to run the tool.
 ### Quick Start
 
 ```bash
-podman run -it --rm --volume ocp4_data:/mnt/data localhost/ocp4-disconnected
+mkdir $HOME/ocp4_data
+podman run -it --rm --name ocp4-disconnected --volume $HOME/ocp4_data:/mnt/data:z localhost/ocp4-disconnected
 ```
 
 ### Usage
