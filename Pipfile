@@ -8,6 +8,7 @@ requests = "*"
 click = "*"
 colorlog = "*"
 tqdm = "*"
+pyyaml = "*"
 
 [dev-packages]
 autopep8 = "*"
