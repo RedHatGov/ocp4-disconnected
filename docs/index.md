@@ -41,16 +41,20 @@ created. If you do not already have a key pair, you can easily create one using
 your existing SSH public key.
 
 ```bash
-aws ec2 import-key-pair --key-name ocp4-disconnected --public-key-material fileb://~/.ssh/id_rsa.pub
+ssh-keygen -q -N '' -f ~/.ssh/ocp4-disconnected
+
+aws ec2 import-key-pair --key-name ocp4-disconnected --public-key-material fileb://~/.ssh/ocp4-disconnected.pub
 ```
 
 Once your key pair is in place, create the simulated disconnected environment
 using the CloudFormation script.
 
 ```bash
+curl https://raw.githubusercontent.com/jaredhocutt/ocp4-disconnected/main/hack/cloudformation.yaml -o ocp4-disconnected-cf.yaml
+
 aws cloudformation create-stack \
     --stack-name ocp4-disconnected \
-    --template-body file://$(pwd)/hack/cloudformation.yaml \
+    --template-body file://ocp4-disconnected-cf.yaml \
     --capabilities CAPABILITY_NAMED_IAM \
     --parameters "ParameterKey=KeyName,ParameterValue=ocp4-disconnected"
 ```
