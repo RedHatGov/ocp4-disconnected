@@ -290,6 +290,55 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable3
       SubnetId: !Ref PrivateSubnet3
 
+  DefaultInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-default-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Join
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - !If [GenerateS3BucketName, !Sub "ocp4-disconnected-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Join
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - !If [GenerateS3BucketName, !Sub "ocp4-disconnected-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
+                        - "/*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: "*"
+
+  DefaultInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${AWS::StackName}-default-profile
+      Path: /
+      Roles:
+        - !Ref DefaultInstanceRole
+
   #############################################################################
   # NAT Instance
   #############################################################################
@@ -400,7 +449,7 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim iptables iptables-services
+          yum install -y unzip vim firewalld
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
@@ -420,10 +469,6 @@ Resources:
           /usr/lib64/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
           systemctl enable --now squid
           sleep 5
-          systemctl enable --now iptables
-          iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
-          iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3130
-          iptables-save > /etc/sysconfig/iptables
 
           cp -a /etc/squid /etc/squid_orig
 
@@ -482,6 +527,13 @@ Resources:
 
           /usr/sbin/squid -k parse && /usr/sbin/squid -k reconfigure
 
+          # Configure firewalld
+          sysctl -w net.ipv4.ip_forward=1 >> /etc/sysctl.d/10-custom.conf
+          firewall-offline-cmd --add-forward-port=port=80:proto=tcp:toport=3129
+          firewall-offline-cmd --add-forward-port=port=443:proto=tcp:toport=3130
+          firewall-offline-cmd --add-masquerade
+          systemctl enable --now firewalld
+
           curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "8675209","Data" : "Application has completed configuration."}' "${NatInstanceWaitHandle}"
 
   #############################################################################
@@ -510,6 +562,7 @@ Resources:
       ImageId: !FindInMap ["RegionMap", !Ref "AWS::Region", "ami"]
       KeyName: !Ref KeyName
       InstanceType: !Ref JumpInstanceType
+      IamInstanceProfile: !Ref DefaultInstanceProfile
       NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: true
@@ -538,7 +591,7 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim lvm2
+          yum install -y unzip vim lvm2 git podman
 
           # Partition and mount data disk
           pvcreate /dev/nvme1n1
@@ -549,6 +602,7 @@ Resources:
           echo '/dev/mapper/data-ocp /mnt/ocp4_data xfs defaults 0 0' >> /etc/fstab
           systemctl daemon-reload
           mount /mnt/ocp4_data
+          chown ec2-user:ec2-user /mnt/ocp4_data
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
@@ -563,51 +617,6 @@ Resources:
   #############################################################################
   # High Side Instance
   #############################################################################
-
-  HighSideInstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::StackName}-highside-role
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                Resource:
-                  - !Join
-                      - ""
-                      - - "arn:aws:s3:::"
-                        - !If [GenerateS3BucketName, !Sub "ocp4-disconnected-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
-              - Effect: Allow
-                Action:
-                  - s3:*
-                Resource:
-                  - !Join
-                      - ""
-                      - - "arn:aws:s3:::"
-                        - !If [GenerateS3BucketName, !Sub "ocp4-disconnected-${AWS::AccountId}-${AWS::Region}", !Ref S3TransferBucketName]
-                        - "/*"
-
-  HighSideInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Sub ${AWS::StackName}-highside-profile
-      Path: /
-      Roles:
-        - !Ref HighSideInstanceRole
 
   HighSideInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -631,6 +640,7 @@ Resources:
       ImageId: !FindInMap ["RegionMap", !Ref "AWS::Region", "ami"]
       KeyName: !Ref KeyName
       InstanceType: !Ref HighSideInstanceType
+      IamInstanceProfile: !Ref DefaultInstanceProfile
       NetworkInterfaces:
         - DeviceIndex: 0
           AssociatePublicIpAddress: false
@@ -670,6 +680,7 @@ Resources:
           echo '/dev/mapper/data-ocp /mnt/ocp4_data xfs defaults 0 0' >> /etc/fstab
           systemctl daemon-reload
           mount /mnt/ocp4_data
+          chown ec2-user:ec2-user /mnt/ocp4_data
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
