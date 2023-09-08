@@ -332,6 +332,7 @@ Resources:
   NatInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: !Sub ${AWS::StackName}-nat-sg
       GroupDescription: Allow HTTP and HTTPS from VPC to NAT instance
       VpcId: !Ref Vpc
       SecurityGroupIngress:
@@ -399,7 +400,7 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim iptables
+          yum install -y unzip vim iptables iptables-services
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
@@ -419,8 +420,10 @@ Resources:
           /usr/lib64/squid/security_file_certgen -c -s /var/spool/squid/ssl_db -M 4MB
           systemctl enable --now squid
           sleep 5
+          systemctl enable --now iptables
           iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
           iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3130
+          iptables-save > /etc/sysconfig/iptables
 
           cp -a /etc/squid /etc/squid_orig
 
@@ -488,6 +491,7 @@ Resources:
   JumpInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: !Sub ${AWS::StackName}-jump-sg
       GroupDescription: Allow SSH from everywhere to Jump instance
       VpcId: !Ref Vpc
       SecurityGroupIngress:
@@ -534,7 +538,17 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim
+          yum install -y unzip vim lvm2
+
+          # Partition and mount data disk
+          pvcreate /dev/nvme1n1
+          vgcreate data /dev/nvme1n1
+          lvcreate --name ocp --extents 100%VG data
+          mkfs.xfs /dev/mapper/data-ocp
+          mkdir /mnt/ocp4_data
+          echo '/dev/mapper/data-ocp /mnt/ocp4_data xfs defaults 0 0' >> /etc/fstab
+          systemctl daemon-reload
+          mount /mnt/ocp4_data
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
@@ -598,6 +612,7 @@ Resources:
   HighSideInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: !Sub ${AWS::StackName}-highside-sg
       GroupDescription: Allow SSH from VPC to High Side instance
       VpcId: !Ref Vpc
       SecurityGroupIngress:
@@ -644,7 +659,17 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim
+          yum install -y unzip vim lvm2
+
+          # Partition and mount data disk
+          pvcreate /dev/nvme1n1
+          vgcreate data /dev/nvme1n1
+          lvcreate --name ocp --extents 100%VG data
+          mkfs.xfs /dev/mapper/data-ocp
+          mkdir /mnt/ocp4_data
+          echo '/dev/mapper/data-ocp /mnt/ocp4_data xfs defaults 0 0' >> /etc/fstab
+          systemctl daemon-reload
+          mount /mnt/ocp4_data
 
           # Install the AWS CLI
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
