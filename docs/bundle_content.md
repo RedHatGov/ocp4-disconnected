@@ -101,9 +101,9 @@ grab the name of the S3 bucket from the outputs captured during the environment
 prep stage or you can use the command below as a convenience.
 
 ```bash
-export S3_TRANSER_BUCKET=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`S3TransferBucket`].OutputValue' --output text)
+export S3_TRANSFER_BUCKET=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`S3TransferBucket`].OutputValue' --output text)
 
-aws s3 cp /mnt/ocp4_data/ocp4_bundle.tar s3://${S3_TRANSER_BUCKET}
+aws s3 cp /mnt/ocp4_data/ocp4_bundle.tar s3://${S3_TRANSFER_BUCKET}
 ```
 
 At this point, we are done with the work we need to do in the connected

@@ -6,7 +6,7 @@ Now that our content has been uploaded to the S3 bucket, we are ready to pull
 it down to the host in the disconnected environment and unpack it.
 
 Start by connecting to the High Side host via SSH. Since this host is in the
-disconnectede environment, it is not directly accesible and we will need to
+disconnected environment, it is not directly accesible and we will need to
 connect to it through the Jump host. You will need the public IP of the Jump
 host and the private IP of the High Side host from the outputs captured during
 the environment prep stage or you can use the command below as a convenience.
