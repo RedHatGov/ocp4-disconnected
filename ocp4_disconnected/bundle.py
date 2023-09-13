@@ -227,7 +227,7 @@ class Bundle():
         logger.info('Completed RPM downloads')
 
     def cleanup(self) -> None:
-        shutil.rmtree(self.images_dir.joinpath('oc-mirror-workspace'))
+        pass
 
     def bundle(self) -> None:
         self.download_installer()
@@ -243,7 +243,7 @@ class Bundle():
         logger.info(f'Bundling all content into tar file at {bundle_path}')
         with tarfile.open(str(bundle_path), 'w') as tar:
             logger.info('Adding clients to tar file')
-            tar.add(self.clients_dir, arcname=self.clients_dir.stem)
+            tar.add(self.clients_version_dir, arcname=self.clients_dir.stem)
             logger.info('Adding images to tar file')
             tar.add(self.images_dir, arcname=self.images_dir.stem)
             logger.info('Adding repos to tar file')
