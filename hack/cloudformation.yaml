@@ -77,12 +77,12 @@ Parameters:
   JumpInstanceDataVolumeSize:
     Description: The size of the data volume to attach to the Jump instance
     Type: Number
-    Default: 100
+    Default: 150
 
   HighSideInstanceDataVolumeSize:
     Description: The size of the data volume to attach to the High Side instance
     Type: Number
-    Default: 100
+    Default: 300
 
 Mappings:
   RegionMap:
@@ -387,14 +387,17 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: !Ref VpcCidr
+          Description: HTTP
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: !Ref VpcCidr
+          Description: HTTPS
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref VpcCidr
+          Description: SSH
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-nat-sg
@@ -541,6 +544,7 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+          Description: SSH
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-jump-sg
@@ -619,6 +623,12 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref VpcCidr
+          Description: SSH
+        - IpProtocol: tcp
+          FromPort: 8443
+          ToPort: 8443
+          CidrIp: !Ref VpcCidr
+          Description: Mirror Registry
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-highside-sg
