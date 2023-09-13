@@ -46,7 +46,6 @@ Parameters:
     Type: String
     Default: t3.small
     AllowedValues:
-      - t3.micro
       - t3.small
       - t3.medium
       - t3.large
@@ -62,11 +61,10 @@ Parameters:
   HighSideInstanceType:
     Description: The instance type to use for the High Side instance
     Type: String
-    Default: t3.small
+    Default: t3.large
     AllowedValues:
-      - t3.small
-      - t3.medium
       - t3.large
+      - t3.xlarge
       - m4.large
       - m4.xlarge
       - m5.large
@@ -392,14 +390,6 @@ Resources:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
-          CidrIp: !Ref VpcCidr
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: !Ref VpcCidr
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
           CidrIp: !Ref VpcCidr
         - IpProtocol: tcp
           FromPort: 22
