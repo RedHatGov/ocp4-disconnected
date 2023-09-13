@@ -46,7 +46,6 @@ Parameters:
     Type: String
     Default: t3.small
     AllowedValues:
-      - t3.micro
       - t3.small
       - t3.medium
       - t3.large
@@ -62,7 +61,7 @@ Parameters:
   HighSideInstanceType:
     Description: The instance type to use for the High Side instance
     Type: String
-    Default: t3.small
+    Default: t3.large
     AllowedValues:
       - t3.small
       - t3.medium
@@ -79,12 +78,12 @@ Parameters:
   JumpInstanceDataVolumeSize:
     Description: The size of the data volume to attach to the Jump instance
     Type: Number
-    Default: 100
+    Default: 150
 
   HighSideInstanceDataVolumeSize:
     Description: The size of the data volume to attach to the High Side instance
     Type: Number
-    Default: 100
+    Default: 300
 
 Mappings:
   RegionMap:
@@ -622,7 +621,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub ${AWS::StackName}-highside-sg
-      GroupDescription: Allow SSH from VPC to High Side instance
+      GroupDescription: Allow SSH and registry access from VPC to High Side instance
       VpcId: !Ref Vpc
       SecurityGroupIngress:
         - IpProtocol: tcp

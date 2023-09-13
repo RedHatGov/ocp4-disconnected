@@ -16,16 +16,11 @@ tar --extract --verbose --directory /mnt/ocp4_data/clients --file /mnt/ocp4_data
 podman login -u init -p discopass --tls-verify=false $(hostname):8443
 
 # Move oc and oc-mirror to path
-sudo mv /mnt/ocp4_data/clients/4.*/oc*
+tar --extract --verbose --directory /mnt/ocp4_data/clients --file /mnt/ocp4_data/clients/openshift-client-linux.tar.gz
+tar --extract --verbose --directory /mnt/ocp4_data/clients --file /mnt/ocp4_data/clients/openshift-install-linux.tar.gz
+tar --extract --verbose --directory /mnt/ocp4_data/clients --file /mnt/ocp4_data/clients/oc-mirror.tar.gz
+chmod +x /mnt/ocp4_data/clients/oc-mirror
+sudo mv /mnt/ocp4_data/clients/oc* /usr/local/bin/
 
 # Mirror from disk to registry
 oc mirror --from=/mnt/ocp4_data/images/mirror_seq1_000000.tar --dest-skip-tls docker://$(hostname):8443
-
-# Make install working directory
-mkdir /mnt/ocp4_data/openshift-install
-
-# Generate a keypair for SSH into cluster nodes
-ssh-keygen -f ~/.ssh/disco-openshift-key -q -N ""
-
-
-
