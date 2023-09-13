@@ -2,7 +2,8 @@
 
 ## Unpack Content
 
-Now that our content has been uploaded to the S3 bucket, we are ready to pull it down to the host in the disconnected environment and unpack it.
+Now that our content has been uploaded to the S3 bucket, we are ready to pull
+it down to the host in the disconnected environment and unpack it.
 
 Start by connecting to the High Side host via SSH. Since this host is in the
 disconnectede environment, it is not directly accesible and we will need to
@@ -16,4 +17,24 @@ export HIGHSIDE_HOST_PRIVATE_IP=$(aws cloudformation describe-stacks --stack-nam
 
 ssh-add ~/.ssh/ocp4-disconnected
 ssh -J ec2-user@${JUMP_HOST_PUBLIC_IP} ec2-user@${HIGHSIDE_HOST_PRIVATE_IP}
+```
+
+We are now ready to pull `ocp4_bundle.tar` from our S3 bucket to our High Side
+host. To reiterate again, in a real environment we would follow the approved
+process for transferring content to our disconnected environment, but for this
+walkthrough we will be using an S3 bucket. You can grab the name of the S3
+bucket from the outputs captured during the environment prep stage or you can
+use the command below as a convenience.
+
+```bash
+export S3_TRANSER_BUCKET=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`S3TransferBucket`].OutputValue' --output text)
+
+aws s3 cp s3://${S3_TRANSER_BUCKET}/ocp4_bundle.tar /mnt/ocp4_data
+```
+
+We will unpack the tar file next so that we can get access to the content
+inside.
+
+```bash
+tar --extract --verbose --directory /mnt/ocp4_data --file /mnt/ocp4_data/ocp4_bundle.tar
 ```
