@@ -224,6 +224,9 @@ class Bundle():
         with tarfile.open(str(bundle_path), 'w') as tar:
             logger.info('Adding clients to tar file')
             tar.add(self.clients_version_dir, arcname=self.clients_dir.stem)
+            for child in self.clients_dir.iterdir():
+                if child.is_file():
+                    tar.add(child, arcname=f'{self.clients_dir.stem}/{child.name}')
             logger.info('Adding images to tar file')
             tar.add(self.images_dir, arcname=self.images_dir.stem)
 
