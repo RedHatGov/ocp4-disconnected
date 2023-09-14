@@ -38,7 +38,6 @@ class Bundle():
         self.pull_secret = pull_secret
 
         self.real_openshift_version = self._real_openshift_version()
-        self.repos_dir = self.output_dir.joinpath('repos')
         self.images_dir = self.output_dir.joinpath('images')
         self.metadata_dir = self.output_dir.joinpath('metadata')
         self.binaries_dir = self.output_dir.joinpath('bin')
@@ -83,7 +82,6 @@ class Bundle():
 
     def make_output_dirs(self) -> None:
         output_dirs = [
-            self.repos_dir,
             self.images_dir,
             self.metadata_dir,
             self.binaries_dir,
@@ -209,23 +207,6 @@ class Bundle():
             logger.error('This failture seems to happen occasionally, retry again')
             self.mirror_images(attempt_count+1)
 
-    def download_rpms(self) -> None:
-        logger.info('Downloading RPMs for podman and its dependencies')
-
-        p = subprocess.run(
-            [
-                '/usr/bin/repotrack',
-                '--disablerepo=*',
-                '--enablerepo=ubi-8-appstream-rpms',
-                '--enablerepo=ubi-8-baseos-rpms',
-                '--destdir',
-                self.repos_dir,
-                'podman',
-            ]
-        )
-
-        logger.info('Completed RPM downloads')
-
     def cleanup(self) -> None:
         pass
 
@@ -235,7 +216,6 @@ class Bundle():
         self.download_oc_mirror()
         self.download_mirror_registry()
         self.mirror_images()
-        self.download_rpms()
         self.cleanup()
 
         # TODO: Bundle incremental data since last run instead of all data
@@ -246,8 +226,6 @@ class Bundle():
             tar.add(self.clients_version_dir, arcname=self.clients_dir.stem)
             logger.info('Adding images to tar file')
             tar.add(self.images_dir, arcname=self.images_dir.stem)
-            logger.info('Adding repos to tar file')
-            tar.add(self.repos_dir, arcname=self.repos_dir.stem)
 
         logger.info('Completed bundle')
 
