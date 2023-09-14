@@ -38,3 +38,5 @@ inside.
 ```bash
 tar --extract --verbose --directory /mnt/ocp4_data --file /mnt/ocp4_data/ocp4_bundle.tar
 ```
+
+[<< Back: Bundle Content](bundle_content.md) | [Next: Install OpenShift >>](install_openshift.md)

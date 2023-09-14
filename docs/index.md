@@ -100,3 +100,5 @@ mechanisms to move content to the high side, but in this walkthrough we are
 using an S3 bucket to simulate that.
 
 TODO: Insert diagram of VPC + EC2
+
+[Next: Bundle Content >>](bundle_content.md)

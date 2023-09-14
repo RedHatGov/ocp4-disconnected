@@ -109,3 +109,5 @@ aws s3 cp /mnt/ocp4_data/ocp4_bundle.tar s3://${S3_TRANSFER_BUCKET}
 At this point, we are done with the work we need to do in the connected
 environment. In the next steps, we will be working in the disconnected
 environment.
+
+[<< Back: Prepare Environment](index.md) | [Next: Unpack Content >>](unpack_content.md)
