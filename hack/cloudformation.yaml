@@ -669,7 +669,7 @@ Resources:
 
           # Apply the latest security patches
           yum update -y --security
-          yum install -y unzip vim lvm2
+          yum install -y unzip vim lvm2 podman
 
           # Partition and mount data disk
           pvcreate /dev/nvme1n1
