@@ -20,24 +20,6 @@ ssh-add ~/.ssh/ocp4-disconnected
 ssh ec2-user@${JUMP_HOST_PUBLIC_IP}
 ```
 
-### Build Container
-
-Next we need to download the tool in this repository to download and bundle the
-content.
-
-> [!NOTE]
-> At this point in development, we will need to clone the repository and
-> build the container image. Once this tool is a bit more mature, there will be
-> pre-built images that can be used.
-
-```bash
-git clone https://github.com/jaredhocutt/ocp4-disconnected.git
-
-cd ocp4-disconnected/
-
-podman build --layers --platform=linux/amd64 --tag ocp4-disconnected .
-```
-
 ### Pull Secret
 
 In order to pull the container images required to install OpenShift, you will
@@ -80,7 +62,7 @@ want a specific z-stream release, you can also specify the version as `x.y.z`
 (e.g. `4.12.30`).
 
 ```bash
-podman run -it --rm --name ocp4-disconnected --volume /mnt/ocp4_data:/mnt/data:z localhost/ocp4-disconnected
+podman run -it --rm --name ocp4-disconnected --platform linux/amd64 --volume /mnt/ocp4_data:/mnt/data:z ghcr.io/jaredhocutt/ocp4-disconnected:latest
 ```
 
 After the tool finishes, all of the content we need is in a single tar file at
