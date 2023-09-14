@@ -5,6 +5,11 @@
 Now that our content has been uploaded to the S3 bucket, we are ready to pull
 it down to the host in the disconnected environment and unpack it.
 
+> [!NOTE]
+> If you're still connected to the Jump host from the previous steps, `exit`
+> from the SSH connection so that you are back to your primary terminal prompt
+> on your machine.
+
 Start by connecting to the High Side host via SSH. Since this host is in the
 disconnected environment, it is not directly accesible and we will need to
 connect to it through the Jump host. You will need the public IP of the Jump

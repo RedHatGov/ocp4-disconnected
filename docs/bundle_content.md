@@ -25,13 +25,13 @@ ssh ec2-user@${JUMP_HOST_PUBLIC_IP}
 In order to pull the container images required to install OpenShift, you will
 need a pull secret that allows you to authenticate to the Red Hat registry.
 
-If you do not already have a Red Hat account, registr for a [FREE Red Hat
+If you do not already have a Red Hat account, register for a [FREE Red Hat
 Developer account](https://developers.redhat.com/register/) that will give you
 access to Red Hat software, including the ability to get the pull secret needed
 for this tool.
 
-You can find your pull secret at
-https://console.redhat.com/openshift/install/pull-secret
+You can find your pull secret on the [Red Hat OpenShift
+Console](https://console.redhat.com/openshift/install/pull-secret)
 
 Keep this page handy as you will be prompted for the value of your pull secret
 when you get ready to run the tool.
