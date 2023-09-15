@@ -27,7 +27,7 @@ class ImagesetConfig():
         self.config_path = self.config_dir.joinpath(f'imageset-config.yaml')
 
         self.openshift_version_xy = '.'.join(self.openshift_version_xyz.split('.')[0:2])
-        self.openshift_release_channel = f'stable-{self.openshift_version_xy}'
+        self.openshift_release_channel = f'fast-{self.openshift_version_xy}'
         self.imageset_config = self._imageset_config()
 
     def _imageset_config(self) -> dict:
@@ -60,7 +60,7 @@ class ImagesetConfig():
                 return
 
         self.imageset_config['mirror']['platform']['channels'].append({
-            'name': f'stable-{self.openshift_version_xy}',
+            'name': self.openshift_release_channel,
             'type': 'ocp',
             'minVersion': self.openshift_version_xyz,
             'maxVersion': self.openshift_version_xyz,
