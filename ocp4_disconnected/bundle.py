@@ -13,7 +13,7 @@ import requests
 from requests.compat import urljoin
 from tqdm import tqdm
 
-from . import MIRROR_URL
+from . import BASE_DIR, MIRROR_URL
 from .imageset import ImagesetConfig
 
 
@@ -227,8 +227,12 @@ class Bundle():
             for child in self.clients_dir.iterdir():
                 if child.is_file():
                     tar.add(child, arcname=f'{self.clients_dir.stem}/{child.name}')
+
             logger.info('Adding images to tar file')
             tar.add(self.images_dir, arcname=self.images_dir.stem)
+
+            logger.info('Adding unpack script to tar file')
+            tar.add(BASE_DIR.joinpath('unpack.sh'), arcname='unpack.sh')
 
         logger.info('Completed bundle')
 

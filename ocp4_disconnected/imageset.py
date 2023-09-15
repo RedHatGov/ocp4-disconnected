@@ -71,11 +71,6 @@ class ImagesetConfig():
         pass
 
     def append_additional_images(self) -> None:
-        self.imageset_config['mirror']['additionalImages'] = [
-            # {'name': 'registry.redhat.io/ubi7/ubi:latest'},
-            # {'name': 'registry.redhat.io/ubi8/ubi:latest'},
-            # {'name': 'registry.redhat.io/ubi9/ubi:latest'},
-        ]
         pass
 
     def create_imageset_config(self) -> None:

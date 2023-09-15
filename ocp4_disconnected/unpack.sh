@@ -79,4 +79,4 @@ mkdir -p ${METADATA_DIR}
 podman login --username openshift --password $(cat ${REGISTRY_DIR}/registry_password) $(hostname --fqdn):8443
 
 cd ${METADATA_DIR}
-oc mirror --from=${LATEST_IMAGES_FILE} docker://$(hostname --fqdn):8443
+oc mirror --from=${LATEST_IMAGES_FILE} docker://$(hostname --fqdn):8443 --verbose 9
