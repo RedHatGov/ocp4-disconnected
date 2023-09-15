@@ -62,6 +62,8 @@ want a specific z-stream release, you can also specify the version as `x.y.z`
 (e.g. `4.12.30`).
 
 ```bash
+podman pull ghcr.io/jaredhocutt/ocp4-disconnected:latest
+
 podman run -it --rm --name ocp4-disconnected --platform linux/amd64 --volume /mnt/ocp4_data:/mnt/data:z ghcr.io/jaredhocutt/ocp4-disconnected:latest
 ```
 
