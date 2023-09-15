@@ -40,3 +40,7 @@ else
         --initUser openshift \
         --initPassword ${REGISTRY_PASSWORD}
 fi
+
+# TODO: Copy mirror registry certs to system trust bundle
+# TODO: Unpack oc, oc-mirror, and openshift-install binaries to system
+# TODO: Populate mirror registry with images from disk
