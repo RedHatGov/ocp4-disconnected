@@ -118,4 +118,30 @@ done
 install_config_trust_bundle=`yq eval --null-input '{"additionalTrustBundle": "'"$(</mnt/ocp4_data/registry/quay-install/quay-rootCA/rootCA.pem)"'"}'`
 install_config_icsp=`cat ${LATEST_ICSP_FILE} | yq eval --no-doc '.spec.repositoryDigestMirrors' | yq eval '{"imageContentSources": . }'`
 
+echo
+echo
+cat << EOF
+The binaries have been unpacked to /usr/local/bin and the container images have
+been uploaded to the mirror registry. You are ready to create the
+install-config.yaml for the target environment.
+
+If you are following along with the walkthrough provided with this tool, check
+next steps for how to generate the install-config.yaml for the example environment
+that's provided. If you are targeting a different environment, the walkthrough
+should also provide some links to the OpenShift documentation for how to
+generate the install-config.yaml for the target environment.
+
+Once you have your install-config.yaml created for your target environment,
+there's one update to the install-config.yaml we need to make that will tell
+the OpenShift installer to use our mirrored content instead of defaulting to
+reaching out to the internet for content.
+
+Copy and paste the following blocks of YAML to the end of your install-config.yaml.
+EOF
+echo
+echo
+
 printf "${install_config_trust_bundle}\n${install_config_icsp}"
+
+echo
+echo
