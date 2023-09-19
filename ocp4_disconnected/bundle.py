@@ -169,6 +169,14 @@ class Bundle():
         self.download_cli_artifacts('OpenShift mirror registry', 'mirror-registry.tar.gz', output_dir=self.clients_dir,
                                     url=urljoin(MIRROR_URL, 'mirror-registry/latest/mirror-registry.tar.gz'))
 
+    def download_jq(self) -> None:
+        self.download_cli_artifacts('jq', 'jq', output_dir=self.clients_dir,
+                                    url='https://github.com/jqlang/jq/releases/latest/download/jq-linux-amd64')
+
+    def download_yq(self) -> None:
+        self.download_cli_artifacts('yq', 'yq', output_dir=self.clients_dir,
+                                    url='https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64')
+
     def mirror_images(self, attempt_count: int = 1) -> None:
         # TODO: see if symlinking to the /mnt/data path works
         # TODO: check if file exists before writing as to not clobber an existing one
@@ -208,13 +216,15 @@ class Bundle():
             self.mirror_images(attempt_count+1)
 
     def cleanup(self) -> None:
-        pass
+        shutil.rmtree(self.images_dir.joinpath('oc-mirror-workspace'))
 
     def bundle(self) -> None:
         self.download_installer()
         self.download_clients()
         self.download_oc_mirror()
         self.download_mirror_registry()
+        self.download_jq()
+        self.download_yq()
         self.mirror_images()
         self.cleanup()
 
