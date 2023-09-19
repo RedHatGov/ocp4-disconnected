@@ -527,7 +527,7 @@ Resources:
           firewall-offline-cmd --add-masquerade
           systemctl enable --now firewalld
 
-          curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "8675209","Data" : "Application has completed configuration."}' "${NatInstanceWaitHandle}"
+          curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "8675309","Data" : "Application has completed configuration."}' "${NatInstanceWaitHandle}"
 
   #############################################################################
   # Jump Instance
