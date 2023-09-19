@@ -50,11 +50,11 @@ Once your key pair is in place, create the simulated disconnected environment
 using the CloudFormation script.
 
 ```bash
-curl https://raw.githubusercontent.com/jaredhocutt/ocp4-disconnected/main/hack/cloudformation.yaml -o ocp4-disconnected-cf.yaml
+curl https://raw.githubusercontent.com/jaredhocutt/ocp4-disconnected/main/hack/cloudformation.yaml -o /tmp/ocp4-disconnected-cf.yaml
 
 aws cloudformation create-stack \
     --stack-name ocp4-disconnected \
-    --template-body file://ocp4-disconnected-cf.yaml \
+    --template-body file:///tmp/ocp4-disconnected-cf.yaml \
     --capabilities CAPABILITY_NAMED_IAM \
     --parameters "ParameterKey=KeyName,ParameterValue=ocp4-disconnected"
 ```
