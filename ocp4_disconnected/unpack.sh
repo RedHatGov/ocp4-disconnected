@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eux
+set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -52,7 +52,7 @@ if [[ ! -f /etc/pki/ca-trust/source/anchors/quay_mirror_registry_ca.pem ]]; then
 fi
 
 ###############################################################################
-# OpenShift Clients
+# Clients
 ###############################################################################
 
 cd ${SCRIPT_DIR}
@@ -71,6 +71,16 @@ if [[ ! -f /usr/local/bin/openshift-install ]]; then
     sudo chmod +x /usr/local/bin/openshift-install
 fi
 
+if [[ ! -f /usr/local/bin/jq ]]; then
+    sudo cp ${CLIENTS_DIR}/jq /usr/local/bin/jq
+    sudo chmod +x /usr/local/bin/jq
+fi
+
+if [[ ! -f /usr/local/bin/yq ]]; then
+    sudo cp ${CLIENTS_DIR}/yq /usr/local/bin/yq
+    sudo chmod +x /usr/local/bin/yq
+fi
+
 ###############################################################################
 # Populate Mirror Registry
 ###############################################################################
@@ -79,4 +89,33 @@ mkdir -p ${METADATA_DIR}
 podman login --username openshift --password $(cat ${REGISTRY_DIR}/registry_password) $(hostname --fqdn):8443
 
 cd ${METADATA_DIR}
-oc mirror --from=${LATEST_IMAGES_FILE} docker://$(hostname --fqdn):8443 --verbose 9
+
+set +e
+oc mirror --from=${LATEST_IMAGES_FILE} docker://$(hostname --fqdn):8443 2>/tmp/oc-mirror-error.log
+
+if [[ $? != 0 ]]; then
+    if ! grep --quiet 'expecting imageset with prefix mirror_seq' /tmp/oc-mirror-error.log; then
+        rm -f /tmp/oc-mirror-error.log
+        exit 1
+    fi
+fi
+
+set -e
+cat /tmp/oc-mirror-error.log
+rm -f /tmp/oc-mirror-error.log
+
+for results_dir in $(find ${METADATA_DIR}/oc-mirror-workspace -type d -name 'results-*' | sort -Vr); do
+    if [[ -f ${results_dir}/imageContentSourcePolicy.yaml ]]; then
+        LATEST_ICSP_FILE=${results_dir}/imageContentSourcePolicy.yaml
+        break
+    fi
+done
+
+###############################################################################
+# Install Config
+###############################################################################
+
+install_config_trust_bundle=`yq eval --null-input '{"additionalTrustBundle": "'"$(</mnt/ocp4_data/registry/quay-install/quay-rootCA/rootCA.pem)"'"}'`
+install_config_icsp=`cat ${LATEST_ICSP_FILE} | yq eval --no-doc '.spec.repositoryDigestMirrors' | yq eval '{"imageContentSources": . }'`
+
+printf "${install_config_trust_bundle}\n${install_config_icsp}"
