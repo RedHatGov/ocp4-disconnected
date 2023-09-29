@@ -125,6 +125,10 @@ The binaries have been unpacked to /usr/local/bin and the container images have
 been uploaded to the mirror registry. You are ready to create the
 install-config.yaml for the target environment.
 
+The mirror registry login information is:
+Username: openshift
+Password: `cat ${REGISTRY_DIR}/registry_password`
+
 If you are following along with the walkthrough provided with this tool, check
 next steps for how to generate the install-config.yaml for the example environment
 that's provided. If you are targeting a different environment, the walkthrough
