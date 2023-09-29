@@ -290,6 +290,7 @@ Resources:
 
   DefaultInstanceRole:
     Type: AWS::IAM::Role
+    DependsOn: InstallIamUser
     Properties:
       RoleName: !Sub ${AWS::StackName}-default-role
       AssumeRolePolicyDocument:
@@ -326,7 +327,13 @@ Resources:
                         - "/*"
               - Effect: Allow
                 Action:
+                  - iam:CreateAccessKey
+                Resource:
+                  - !GetAtt InstallIamUser.Arn
+              - Effect: Allow
+                Action:
                   - cloudformation:DescribeStacks
+                  - ec2:DescribeSubnets
                 Resource: "*"
 
   DefaultInstanceProfile:
@@ -336,6 +343,19 @@ Resources:
       Path: /
       Roles:
         - !Ref DefaultInstanceRole
+
+  InstallIamUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub ${AWS::StackName}-install-user
+      Policies:
+        - PolicyName: AdministratorAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
 
   #############################################################################
   # NAT Instance
@@ -732,3 +752,7 @@ Outputs:
   HighSideInstancePrivateIp:
     Description: A reference to the private IP to the High Side instance
     Value: !GetAtt HighSideInstance.PrivateIp
+
+  InstallIamUser:
+    Description: A reference to the IAM User to use for installing OpenShift
+    Value: !Ref InstallIamUser
