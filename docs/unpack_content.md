@@ -44,4 +44,69 @@ inside.
 tar --extract --verbose --directory /mnt/ocp4_data --file /mnt/ocp4_data/ocp4_bundle.tar
 ```
 
+After extracting the `ocp4_bundle.tar` file, we now have the content we need to
+install OpenShift in a disconnected environment. But before we can do that, we
+need to put everything in the right place. Also included in the tar file that
+we unpacked is a script named `unpack.sh` that automates this for us.
+
+We'll run the script and wait for it to finish. During this process it will
+unpack the binaries needed and put them in the appropriate places on the
+filesystem (e.g. `/usr/local/bin`), it will deploy the OpenShift Mirror
+Registry, and then it will populate the mirror registry with the container
+images.
+
+```bash
+/mnt/ocp4_data/unpack.sh
+```
+
+Once the `unpack.sh` script finishes, it will output a configuration that you
+will need to copy and paste to the end of your `install-config.yaml` that's
+used to install OpenShift. We'll create the `install-config.yaml` in the next
+section and those instructions will show you where to put that configuration.
+
+> [!NOTE]
+> If you lose the confirmation output at any point, you can run `unpack.sh`
+> again and it will skip things it's already done and output the configuration
+> output again.
+
+Example output:
+
+```text
+additionalTrustBundle: |-
+  -----BEGIN CERTIFICATE-----
+  MIIEATCCAumgAwIBAgIUG5laoRL+8bfF2DPxJPzR6mAN2SwwDQYJKoZIhvcNAQEL
+  BQAwgYIxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJWQTERMA8GA1UEBwwITmV3IFlv
+  cmsxDTALBgNVBAoMBFF1YXkxETAPBgNVBAsMCERpdmlzaW9uMTEwLwYDVQQDDChp
+  cC0xMC0wLTQ5LTQyLnVzLWVhc3QtMi5jb21wdXRlLmludGVybmFsMB4XDTIzMDkx
+  NTE4MTA1OFoXDTI2MDcwNTE4MTA1OFowgYIxCzAJBgNVBAYTAlVTMQswCQYDVQQI
+  DAJWQTERMA8GA1UEBwwITmV3IFlvcmsxDTALBgNVBAoMBFF1YXkxETAPBgNVBAsM
+  CERpdmlzaW9uMTEwLwYDVQQDDChpcC0xMC0wLTQ5LTQyLnVzLWVhc3QtMi5jb21w
+  dXRlLmludGVybmFsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6hqU
+  hh1uEH05SihdcdEB4qBo3sbpm5rt3XzfB5U4Q1zJcSNqGFxcsHy4M4tgH6WRaSco
+  E0VqjlnuxzmOkBAnbGnCNHHJxRmRakm3CMBmaK6zA+/k4RjhVzXnaFqlXeditSx3
+  d1rsd7FMdbWdNgrQaHPIuV2rtKFU9/bI0y4S+TH1GUNfakSTQzo1knbB4vC81DFZ
+  o8wC9M9d3T9rGIeWtNPWD3kIYLSwhw8Cdk0Dms3SMhBnhUWLQq5zJmj0gK1SELH6
+  2ZzNVESRpmMcDeiqEaaLUIQRDDrpmHECweNX+PQqyeopxxhLPIRB2WMJEbaeNtXI
+  XgVe8vD9h5VdMSOLdQIDAQABo20wazALBgNVHQ8EBAMCAuQwEwYDVR0lBAwwCgYI
+  KwYBBQUHAwEwMwYDVR0RBCwwKoIoaXAtMTAtMC00OS00Mi51cy1lYXN0LTIuY29t
+  cHV0ZS5pbnRlcm5hbDASBgNVHRMBAf8ECDAGAQH/AgEBMA0GCSqGSIb3DQEBCwUA
+  A4IBAQCCwlTbg7m/D3Akp5/bufQyL751x2UTxqY3dPUFQXrMh+hUaoFaOd9NZdE1
+  laiTMTmiXhatnpSoh3tvKpFqy41GPqEr+jRPQ/J1H8Luok5k9ud58ikn7PsbtZpW
+  sXxQGJb0dQouPzQNwTWXtvtFtP9ydrB9rRQGh+x7Je4+uwmz9w31e8uyEudrw0sb
+  iTUDpftyGYJeTBDJySEZNF7jGABEny2jPVWnG3rXtEj2Lkt4ZkwixLTHFYZtbfp+
+  W/vAur1bnkbtm1p21SkeI/sE8D2KXLynPkaXfYIbF4bgs0N7KCfRLQXgUbwrIdI5
+  GwgfEglJ+zHNyH64ixCBXEJqy4ti
+  -----END CERTIFICATE-----
+imageContentSources:
+  - mirrors:
+      - ip-10-0-49-42.us-east-2.compute.internal:8443/ubi8
+    source: registry.access.redhat.com/ubi8
+  - mirrors:
+      - ip-10-0-49-42.us-east-2.compute.internal:8443/openshift/release
+    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+  - mirrors:
+      - ip-10-0-49-42.us-east-2.compute.internal:8443/openshift/release-images
+    source: quay.io/openshift-release-dev/ocp-release
+```
+
 [<< Back: Bundle Content](bundle_content.md) - [Next: Install OpenShift >>](install_openshift.md)

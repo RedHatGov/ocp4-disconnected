@@ -67,7 +67,7 @@ takes in the ballpark of 5-6 minutes to deploy the entire stack.
 watch -n 10 aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].StackStatus'
 ```
 
-Now that the CloudFormation stack has finished deploying, we will capture the
+Now that the CloudFormation stack has finished deploying, we can capture the
 output in order to get the IP addresses we need in order to connect to the EC2
 instances that were created.
 
@@ -75,29 +75,8 @@ instances that were created.
 aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs'
 ```
 
-There are 3 values we need to take note of from this output:
-
-- `JumpInstancePublicIp`
-- `HighSideInstancePrivateIp`
-- `S3TransferBucket`
-
-The `JumpInstancePublicIp` is the public IP of the Jump host that we will use
-to be able to access the High Side host that is in the disconnected
-environment. For this walkthrough, we will also use it run this tool and pull
-down the content, however that is not required. You could choose to use your
-laptop or any other internet connected host as once we pull down the content,
-we will be uploading it to S3 as the transfer mechanism between the connected
-and disconnected environments.
-
-The `HighSideInstancePrivateIp` is the private IP of the High Side host where
-we will be unpacking our content bundle and run the provided script to stand up
-the supporting infrastructure (e.g. container registry) and perform the
-OpenShift install.
-
-The `S3TransferBucket` will be used for transferring data between the connected
-and disconnected environments. In a real environment, we would use the approved
-mechanisms to move content to the high side, but in this walkthrough we are
-using an S3 bucket to simulate that.
+However, as we go through this walkthrough, the commands to grab the value from
+the outputs will be provided.
 
 TODO: Insert diagram of VPC + EC2
 

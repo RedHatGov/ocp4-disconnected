@@ -2,170 +2,203 @@
 
 ## Install OpenShift
 
-We're nearly ready to kick off the OpenShift installer. The content bundle contains a convenience script called `unpack.sh` that will facilitate the next few steps in preparation for the installation, namely:
-* Extracting nested tar files to access the binaries for tooling within the bundle
-* Installing, running, and hydrating the mirror registry with OpenShift release content
-* Printing a YAML snippet we'll need for the `install-config.yaml`, which we'll create in the next step
+Now that our disconnected environment is setup and our registry has the
+required content, we're ready to install OpenShift.
 
-Go ahead and run the script:
+As mentioned in the previous section, we need to create an
+`install-config.yaml` that will tell OpenShift how to perform the installation.
+As part of generating this file, we will also be sure to copy and paste the
+configuration output of the `unpack.sh` script to the bottom of our generated
+file.
+
+### Create Install Configuration
+
+The details of what goes in the `install-config.yaml` will differ depending on
+the target platform where your OpenShift cluster will be running. In this
+walkthrough, we will be targeting the simulated disconnected environment that
+we created in AWS, but for details for other target platforms, you can refer to
+the [OpenShift documentation][ocp_platforms].
+
+For the purposes of our walkthrough, we will use the High Side host since it is
+already available in the disconnected environment. It's not required to do the
+installation from the same host where the content is being hosted and we are
+only doing it for convenience in this walkthrough.
+
+If you are not already, connect to the High Side host via SSH.
 
 ```bash
-/mnt/ocp4_data/unpack.sh
+export JUMP_HOST_PUBLIC_IP=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`JumpInstancePublicIp`].OutputValue' --output text)
+export HIGHSIDE_HOST_PRIVATE_IP=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`HighSideInstancePrivateIp`].OutputValue' --output text)
+
+ssh-add ~/.ssh/ocp4-disconnected
+ssh -J ec2-user@${JUMP_HOST_PUBLIC_IP} ec2-user@${HIGHSIDE_HOST_PRIVATE_IP}
 ```
 
-The output should look something like this:
-```
-The required binaries have been unpacked to /usr/local/bin and the required
-container images have been uploaded to the mirror registry. You are ready to
-create the install-config.yaml for the target environment.
+Create an SSH key to use for the OpenShift cluster.
 
-If you are following along with the walkthrough provided with this tool, check
-next steps for how to generate the install-config.yaml for the example environment
-that's provided. If you are targeting a different environment, the walkthrough
-should also provide some links to the OpenShift documentation for how to
-generate the install-config.yaml for the target environment.
-
-Once you have your install-config.yaml created for your target environment,
-there's one update to the install-config.yaml we need to make that will tell
-the OpenShift installer to use our mirrored content instead of defaulting to
-reaching out to the internet for content.
-
-Copy and paste the following blocks of YAML to the end of your install-config.yaml.
-
-
-additionalTrustBundle: |-
-  -----BEGIN CERTIFICATE-----
-  MIIEATCCAumgAwIBAgIUG5laoRL+8bfF2DPxJPzR6mAN2SwwDQYJKoZIhvcNAQEL
-  BQAwgYIxCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJWQTERMA8GA1UEBwwITmV3IFlv
-  cmsxDTALBgNVBAoMBFF1YXkxETAPBgNVBAsMCERpdmlzaW9uMTEwLwYDVQQDDChp
-  cC0xMC0wLTQ5LTQyLnVzLWVhc3QtMi5jb21wdXRlLmludGVybmFsMB4XDTIzMDkx
-  NTE4MTA1OFoXDTI2MDcwNTE4MTA1OFowgYIxCzAJBgNVBAYTAlVTMQswCQYDVQQI
-  DAJWQTERMA8GA1UEBwwITmV3IFlvcmsxDTALBgNVBAoMBFF1YXkxETAPBgNVBAsM
-  CERpdmlzaW9uMTEwLwYDVQQDDChpcC0xMC0wLTQ5LTQyLnVzLWVhc3QtMi5jb21w
-  dXRlLmludGVybmFsMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6hqU
-  hh1uEH05SihdcdEB4qBo3sbpm5rt3XzfB5U4Q1zJcSNqGFxcsHy4M4tgH6WRaSco
-  E0VqjlnuxzmOkBAnbGnCNHHJxRmRakm3CMBmaK6zA+/k4RjhVzXnaFqlXeditSx3
-  d1rsd7FMdbWdNgrQaHPIuV2rtKFU9/bI0y4S+TH1GUNfakSTQzo1knbB4vC81DFZ
-  o8wC9M9d3T9rGIeWtNPWD3kIYLSwhw8Cdk0Dms3SMhBnhUWLQq5zJmj0gK1SELH6
-  2ZzNVESRpmMcDeiqEaaLUIQRDDrpmHECweNX+PQqyeopxxhLPIRB2WMJEbaeNtXI
-  XgVe8vD9h5VdMSOLdQIDAQABo20wazALBgNVHQ8EBAMCAuQwEwYDVR0lBAwwCgYI
-  KwYBBQUHAwEwMwYDVR0RBCwwKoIoaXAtMTAtMC00OS00Mi51cy1lYXN0LTIuY29t
-  cHV0ZS5pbnRlcm5hbDASBgNVHRMBAf8ECDAGAQH/AgEBMA0GCSqGSIb3DQEBCwUA
-  A4IBAQCCwlTbg7m/D3Akp5/bufQyL751x2UTxqY3dPUFQXrMh+hUaoFaOd9NZdE1
-  laiTMTmiXhatnpSoh3tvKpFqy41GPqEr+jRPQ/J1H8Luok5k9ud58ikn7PsbtZpW
-  sXxQGJb0dQouPzQNwTWXtvtFtP9ydrB9rRQGh+x7Je4+uwmz9w31e8uyEudrw0sb
-  iTUDpftyGYJeTBDJySEZNF7jGABEny2jPVWnG3rXtEj2Lkt4ZkwixLTHFYZtbfp+
-  W/vAur1bnkbtm1p21SkeI/sE8D2KXLynPkaXfYIbF4bgs0N7KCfRLQXgUbwrIdI5
-  GwgfEglJ+zHNyH64ixCBXEJqy4ti
-  -----END CERTIFICATE-----
-imageContentSources:
-  - mirrors:
-      - ip-10-0-49-42.us-east-2.compute.internal:8443/ubi8
-    source: registry.access.redhat.com/ubi8
-  - mirrors:
-      - ip-10-0-49-42.us-east-2.compute.internal:8443/openshift/release
-    source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
-  - mirrors:
-      - ip-10-0-49-42.us-east-2.compute.internal:8443/openshift/release-images
-    source: quay.io/openshift-release-dev/ocp-release
-```
-
-### Creating the `install-config.yaml`
-Next we'll create the `install-config.yaml` which will house the configuration required by `openshift-install` to create our cluster. This process will differ depending on what platform you're installing to. Supported platforms and the accompanying documentation for each can be found in the official documentation [here](https://docs.openshift.com/container-platform/latest/installing/installing-preparing.html#installing-preparing-install-manage). Once you've generated the initial `install-config.yaml`, be sure to make any changes you need in addition to the output from `unpack.sh` above.
-
-For our walkthrough, we're going to proceed with a cluster installation in AWS. 
-1. Let's start by creating a workspace on the high side host to house our installation materials:
-   ```bash
-   mkdir /mnt/ocp4_data/install
-   cd /mnt/ocp4_data/install
-   ```
-2. Then generate an SSH key pair for access to cluster nodes:
-   ```bash
-   ssh-keygen -f ~/.ssh/ocp4-cluster -q -N ""
-   ```
-3. Use the following Python code to minify your container registry pull secret. Copy this output to your clipboard, since you'll need it in a moment:
-   ```bash
-   python3 -c $'import json\nimport sys\nwith open(sys.argv[1], "r") as f: print(json.dumps(json.load(f)))' /run/user/1000/containers/auth.json
-   ```
-   > For connected installations, you'd use the secret from the Hybrid Cloud Console, but for our use case, the mirror registry is the only one OpenShift will need to authenticate to.
-4. Then generate `install-config.yaml`:
-   ```bash
-   /mnt/ocp4_data/clients/openshift-install create install-config --dir /mnt/ocp4_data/install
-   ```
-
-   The OpenShift installer will prompt you for a number of fields; enter the values below:
-   * **SSH Public Key**: `/home/ec2-user/.ssh/ocp4-cluster.pub`
-     > The SSH public key used to access all nodes within the cluster.
-   * **Platform**: `aws`
-     > The platform on which the cluster will run.
-   * **AWS Access Key ID** and **Secret Access Key**: Enter your AWS credentials from RHDP.
-   * **Region**: `us-east-1 (US East (N. Virginia))`
-   * **Base Domain**: `sandboxXXXX.opentlc.com`
-     > The base domain of the cluster. All DNS records will be sub-domains of this base and will also include the cluster name.
-   * **Cluster Name**: `disco`
-     > The name of the cluster. This will be used when generating sub-domains.
-   * **Pull Secret**: Paste the output from minifying this in Step 3.
-
-   That's it! The installer will generate `install-config.yaml` and drop it in `/mnt/ocp4_data/install` for you.
-5. We need to make a couple changes to this config before we kick off the install:
-   * Change `publish` from **External** to **Internal**. We're using private subnets to house the cluster, so it won't be publicly accessible.
-   * Add the subnet IDs for your private subnets to `platform.aws.subnets`. Otherwise, the installer will create its own VPC and subnets. You can retrieve them by running this command from your high side host:
-     ```bash
-     aws ec2 describe-subnets | jq '[.Subnets[] | select(.Tags[].Value | contains ("private")).SubnetId] | unique' -r | yq read - -P
-     ```
-     Then add them to `platform.aws.subnets` in your `install-config.yaml` so that they look something like this:
-     ```bash
-     ...
-     platform:
-       aws:
-         region: us-east-1
-         subnets:
-         - subnet-00f28bbc11d25d523
-         - subnet-07b4de5ea3a39c0fd
-         - subnet-07b4de5ea3a39c0fd
-      ...
-     ```
-   * Modify the `machineNetwork` to match the IPv4 CIDR blocks from the private subnets. Otherwise your control plane and compute nodes will be assigned IP addresses that are out of range and break the install. You can retrieve them by running this command from your workstation:
-     ```execute-2
-     aws ec2 describe-subnets | jq '[.Subnets[] | select(.Tags[].Value | contains ("private")).CidrBlock] | unique | map("cidr: " + .)' | yq read -P - | sed "s/'//g"  
-     ```
-     Then use them to **replace the existing** `networking.machineNetwork` **entry** in your `install-config.yaml` so that they look something like this:
-     ```bash
-     ...
-     networking:
-       clusterNetwork:
-       - cidr: 10.128.0.0/14
-         hostPrefix: 23
-       machineNetwork:
-       - cidr: 10.0.48.0/20
-       - cidr: 10.0.64.0/20
-       - cidr: 10.0.80.0/20
-     ...
-     ```
-   * Finally, add the snippet output by `unpack.sh` containing the `additionalTrustBundle` and `imageContentSources` to the end of your `install-config.yaml`.
-6. Then make a backup of your `install-config.yaml` since the installer will consume (and delete) it:
-   ```execute
-   cp install-config.yaml install-config.yaml.bak
-   ```
-
-### Running the Installation
-We're ready to run the install! Let's kick off the cluster installation:
-```execute
-/mnt/ocp4_data/clients/openshift-install create cluster --dir /mnt/ocp4_data/install --log-level=DEBUG
-```
-The installation process should take about 30 minutes. If you've done everything correctly, you should see something like this:
 ```bash
-...
-INFO Install complete!
-INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/myuser/install_dir/auth/kubeconfig'
-INFO Access the OpenShift web-console here: https://console-openshift-console.apps.mycluster.example.com
-INFO Login to the console with user: "kubeadmin", and password: "password"
-INFO Time elapsed: 30m49s
+ssh-keygen -q -N '' -f ~/.ssh/ocp4-install
+```
+
+Create a directory to use as workspace for the installation.
+
+```bash
+mkdir ~/ocp4-install
+```
+
+Before we run the installer to generate our `install-config.yaml`, we need to
+create our pull secret for the disconnected environment that contains the
+authentication information for our mirror registry.
+
+```bash
+export REGISTRY_USERNAME=openshift
+export REGISTRY_PASSWORD=$(echo -n `head -n 1 /mnt/ocp4_data/registry/registry_password`)
+
+cat << EOF | jq -r tostring > ~/pull-secret.json
+{
+  "auths": {
+    "$(hostname --fqdn):8443": {
+      "auth": "$(echo -n "openshift:${REGISTRY_PASSWORD}" | base64 -w0)"
+    }
+  }
+}
+EOF
+
+cat ~/pull-secret.json
+```
+
+You will want to copy the output to your clipboard.
+
+To start, we will use the `openshift-install` command to generate the initial
+`install-config.yaml` by answering the prompts.
+
+
+```bash
+openshift-install create install-config --dir ~/ocp4-install
+```
+
+The table below shows the descriptions of each prompt you will see.
+
+| Prompt         | Description                                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SSH Public Key | The SSH public key used to access all nodes within the cluster.                                                                                                    |
+| Platform       | The platform on which the cluster will run. For a full list of platforms, including those not supported by this wizard, see https://github.com/openshift/installer |
+| Region         | The AWS region to be used for installation.                                                                                                                        |
+| Base Domain    | The base domain of the cluster. All DNS records will be sub-domains of this base and will also include the cluster name.                                           |
+| Cluster Name   | The name of the cluster. This will be used when generating sub-domains.                                                                                            |
+| Pull Secret    | The container registry pull secret for this cluster, as a single line of JSON (e.g. `{"auths": {...}}`).                                                           |
+
+For the purposes of our walkthrough, we'll want to answer the prompts as shown
+below.
+
+> [!IMPORTANT]
+> If you have a domain you want to pushlish your cluster under, you can set
+> **Base Domain** to that instead of `example.com`. The full domain of your
+> cluster will become `{{ Cluster Name }}.{{ Base Domain }}`, so be sure to set
+> **Base Domain** accordingly.
+>
+> However, we will be deploying this cluster isolated to the VPC only, so using
+> any **Base Domain** will suffice since it will resolve within the VPC via a
+> private Route53 zone.
+
+```text
+? SSH Public Key /home/ec2-user/.ssh/ocp4-install.pub
+? Platform aws
+? Region us-east-2
+? Base Domain example.com
+? Cluster Name ocp4-disconnected
+? Pull Secret [? for help] ********************************************************************************************************************************
+```
+
+After answering the prompts, our `install-config.yaml` is located at
+`~/ocp4-install/install-config.yaml`. Before we are able to start the install,
+we need to add some items to the `install-config.yaml` file. Specifically,
+since we are deploying into an existing VPC, we need to let the installer know
+which subnets to use and the details to pull images from our mirror registry.
+
+To make this easier, we'll take advantage of the AWS CLI and `yq` to make these
+edits for us. However, to describe what we're doing, we are updating
+`platform.aws.subnets` to be the list of disconnected subnets from our VPC and
+also updating `networking.machineNetwork` to contain the CIDR of those subnets.
+
+```bash
+export PRIVATE_SUBNETS=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`PrivateSubnets`].OutputValue' --output text | sed 's/,/\n/g')
+
+yq -i '.platform.aws.subnets = []' ~/ocp4-install/install-config.yaml
+yq -i '.networking.machineNetwork = []' ~/ocp4-install/install-config.yaml
+yq -i '.publish = "Internal"' ~/ocp4-install/install-config.yaml
+
+for subnet in ${PRIVATE_SUBNETS}; do
+  yq -i '.platform.aws.subnets += "'${subnet}'"' ~/ocp4-install/install-config.yaml
+  yq -i '.networking.machineNetwork += {"cidr": '$(aws ec2 describe-subnets --subnet-ids ${subnet} | jq '.Subnets[0].CidrBlock')'}'  ~/ocp4-install/install-config.yaml
+done
+```
+
+After we run the commands above, in our `install-config.yaml` we should see the
+`platform.aws.subnets` and `networking.machineNetwork` updated to look similar
+to the output below.
+
+```yaml
+networking:
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+      hostPrefix: 23
+  machineNetwork:
+    - cidr: 10.0.48.0/20
+    - cidr: 10.0.64.0/20
+    - cidr: 10.0.80.0/20
+  networkType: OVNKubernetes
+  serviceNetwork:
+    - 172.30.0.0/16
+
+platform:
+  aws:
+    region: us-east-2
+    subnets:
+      - subnet-067e552c71153a6a3
+      - subnet-05a8d8fe1fd2accfe
+      - subnet-004cc1714240d33db
+```
+
+The last modification we need to make to our `install-config.yaml` is to add
+the output from the `unpack.sh` script that will tell the OpenShift installer
+where to find the images in the mirror registry.
+
+```bash
+yq -i '. *= load("/mnt/ocp4_data/registry/install_config_registry.yaml")' ~/ocp4-install/install-config.yaml
+```
+
+We're almost ready to start the OpenShift installation. One last thing we'll do
+is make a backup copy of our `install-config.yaml` because the installation
+process will consume the one in `~/ocp4-install`.
+
+```bash
+cp ~/ocp4-install/install-config.yaml ~/ocp4-install/install-config.yaml.bak
+```
+
+During the OpenShift installation process, the installer creates all of the AWS
+resources required for the OpenShift cluster. We will need an IAM User with the
+[appropriate permissions][iam_permissions] to perform this installation, which
+was already created for us by the CloudFormation template for our simulated
+disconnected environment.
+
+We first need to create keys we can use before we run the OpenShift installer.
+
+```bash
+export OCP_INSTALL_ACCESS_KEY=$(aws iam create-access-key --user-name $(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`InstallIamUser`].OutputValue' --output text))
+
+aws configure set aws_access_key_id $(echo ${OCP_INSTALL_ACCESS_KEY} | jq '.AccessKey.AccessKeyId') --profile ocp4-install
+aws configure set aws_secret_access_key $(echo ${OCP_INSTALL_ACCESS_KEY} | jq '.AccessKey.SecretAccessKey') --profile ocp4-install
+aws configure set region $(curl --silent http://169.254.169.254/latest/meta-data/placement/region) --profile ocp4-install
+
+export AWS_PROFILE=ocp4-install
+export AWS_EC2_METADATA_DISABLED=true
+```
+
+```bash
+openshift-install create cluster --dir ~/ocp4-install
 ```
 
 
-
-
-
-
-
+[ocp_platforms]: https://docs.openshift.com/container-platform/latest/installing/installing-preparing.html#installing-preparing-install-manage
+[iam_permissions]: https://docs.openshift.com/container-platform/4.12/installing/installing_aws/installing-aws-account.html#installation-aws-permissions_installing-aws-account
