@@ -190,14 +190,61 @@ export OCP_INSTALL_ACCESS_KEY=$(aws iam create-access-key --user-name $(aws clou
 aws configure set aws_access_key_id $(echo ${OCP_INSTALL_ACCESS_KEY} | jq '.AccessKey.AccessKeyId') --profile ocp4-install
 aws configure set aws_secret_access_key $(echo ${OCP_INSTALL_ACCESS_KEY} | jq '.AccessKey.SecretAccessKey') --profile ocp4-install
 aws configure set region $(curl --silent http://169.254.169.254/latest/meta-data/placement/region) --profile ocp4-install
-
-export AWS_PROFILE=ocp4-install
-export AWS_EC2_METADATA_DISABLED=true
 ```
+
+Now we're ready to start the OpenShift install. Once you kick things off, it
+will start creating the infrastructure needed for the cluster and then install
+OpenShift.
 
 ```bash
+export AWS_PROFILE=ocp4-install
+export AWS_EC2_METADATA_DISABLED=true
+
 openshift-install create cluster --dir ~/ocp4-install
 ```
+
+It will likely take 30+ minutes for the installer to provision all of the
+infrastructure and deploy OpenShift to that infrastructure. Once the
+installation is complete, we have a OpenShift cluster running in your
+disconnected environment!
+
+You will also see some important information at the end of the installation
+that contains the URL and login credentials for your OpenShift cluster.
+
+```text
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.ocp4-disconnected.example.com
+INFO Login to the console with user: "kubeadmin", and password: "*****-*****-*****-*****"
+```
+
+In order for us to connect to that cluster in our simulated disconnected
+environment, we will need to setup a connection through our Jump host to be
+able to access the cluster as it is not exposed to the internet. To do this, we
+will use a tool called `sshuttle`. If you do not have `sshuttle` on your
+computer, you can install it for your platform by following the instructions in
+the README on the project page.
+
+https://github.com/sshuttle/sshuttle
+
+At this point, you can disconnect from the High Side host so that you are back
+at the terminal prompt of your computer.
+
+To create our tunnel to the Jump host, we'll ensure that DNS queries and all
+traffic goes through our Jump host by running the following from our computer.
+
+```bash
+export JUMP_HOST_PUBLIC_IP=$(aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stacks[0].Outputs[?OutputKey==`JumpInstancePublicIp`].OutputValue' --output text)
+
+ssh-add ~/.ssh/ocp4-disconnected
+sshuttle --python /usr/libexec/platform-python --dns --remote ec2-user@${JUMP_HOST_PUBLIC_IP} 0.0.0.0/0
+```
+
+We should now be able to open
+https://console-openshift-console.apps.ocp4-disconnected.example.com in our
+browser and login with the credentials given at the end of the installation.
+
+If you need to recover those credentials at any time, the username will always
+be `kubeadmin` and the password can be found at
+`~/ocp4-install/auth/kubeadmin-password` on the High Side host.
 
 
 [ocp_platforms]: https://docs.openshift.com/container-platform/latest/installing/installing-preparing.html#installing-preparing-install-manage
