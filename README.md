@@ -7,9 +7,6 @@ transfered to the disconnected environment. The generated bundle includes a
 script to unpack and host the artifacts in the disconnected environment so that
 they can be used to install OpenShift.
 
-For a walkthrough of how to use the tool, including deploying a simulated
-disconnected environment, [take a look at the docs](docs/index.md).
-
 ## Documentation
 
 The following documentation will walk you through how to use this tool.
