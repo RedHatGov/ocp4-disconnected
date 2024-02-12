@@ -44,24 +44,6 @@ next step This .tool accepts a few parameters and will prompt for any that are
 not passed in. For this walkthrough, we will use the tool in that method and
 have it prompt us for the required input.
 
-```text
-Usage: python -m ocp4_disconnected.bundle [OPTIONS]
-
-  Bundle all of the artifacts needed for an OpenShift 4 install in a disconnected / air-gapped
-  environment.
-
-  When prompted for your Pull Secret, it can be found at:
-  https://console.redhat.com/openshift/install/pull-secret
-
-Options:
-  --openshift-version TEXT  The version of OpenShift (e.g. 4.12, 4.12.23, latest) you would like
-                            to create an air-gapped package for  [required]
-  --output-dir TEXT         The directory to output the content needed for an air-gapped install
-                            [required]
-  --pull-secret TEXT        The pull secret used to pull images from Red Hat
-  -h, --help                Show this message and exit.
-```
-
 > [!WARNING]
 > If you choose to specify parameters via the CLI instead of being prompted, it
 > is **NOT** recommended to override `--output-dir` as it is already
