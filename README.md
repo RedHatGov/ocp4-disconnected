@@ -15,6 +15,9 @@ simulated disconnected environment that you can use to try it out. To assist in
 illustrating how to use this tool, this documentation will take advantage of an
 environment created using that CloudFormation script.
 
+If you are providing your own environment, you can skip ahead to the
+[Bundle Content](docs/bundle_content.md) section.
+
 At a high level, the process for using this tool to deploy an OpenShift cluster
 in a disconnected environment looks like this:
 
@@ -59,7 +62,7 @@ Once your key pair is in place, create the simulated disconnected environment
 using the CloudFormation script.
 
 ```bash
-curl https://raw.githubusercontent.com/jaredhocutt/ocp4-disconnected/main/hack/cloudformation.yaml -o /tmp/ocp4-disconnected-cf.yaml
+curl https://raw.githubusercontent.com/RedHatGov/ocp4-disconnected/main/hack/cloudformation.yaml -o /tmp/ocp4-disconnected-cf.yaml
 
 aws cloudformation create-stack \
     --stack-name ocp4-disconnected \
@@ -86,7 +89,5 @@ aws cloudformation describe-stacks --stack-name ocp4-disconnected --query 'Stack
 
 However, as we go through this walkthrough, the commands to grab the value from
 the outputs will be provided.
-
-TODO: Insert diagram of VPC + EC2
 
 [Next: Bundle Content >>](docs/bundle_content.md)

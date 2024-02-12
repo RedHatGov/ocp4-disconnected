@@ -39,10 +39,28 @@ when you get ready to run the tool.
 ### Download and Package Content
 
 We will now run this tool the download and package the content we'll need in
-order to perform an install of OpenShift in a disconnected environment in the nxext step This
-.tool accepts a few parameters and will prompt for any that are not passed in.
-For this walkthrough, we will use the tool in that method and have it prompt us
-for the required input.
+order to perform an install of OpenShift in a disconnected environment in the
+next step This .tool accepts a few parameters and will prompt for any that are
+not passed in. For this walkthrough, we will use the tool in that method and
+have it prompt us for the required input.
+
+```text
+Usage: python -m ocp4_disconnected.bundle [OPTIONS]
+
+  Bundle all of the artifacts needed for an OpenShift 4 install in a disconnected / air-gapped
+  environment.
+
+  When prompted for your Pull Secret, it can be found at:
+  https://console.redhat.com/openshift/install/pull-secret
+
+Options:
+  --openshift-version TEXT  The version of OpenShift (e.g. 4.12, 4.12.23, latest) you would like
+                            to create an air-gapped package for  [required]
+  --output-dir TEXT         The directory to output the content needed for an air-gapped install
+                            [required]
+  --pull-secret TEXT        The pull secret used to pull images from Red Hat
+  -h, --help                Show this message and exit.
+```
 
 > [!WARNING]
 > If you choose to specify parameters via the CLI instead of being prompted, it
@@ -51,9 +69,11 @@ for the required input.
 > a volume in your `podman run` (as seen below) to `/mnt/data` to ensure your
 > data persists.
 
-The information that we need to give the tool is the OpenShift version to
-download content for and our pull secret from above. The pull secret only needs
-to be specified on the first run as it will be saved and used for future runs.
+The information that we need to give the tool is:
+
+- The OpenShift version to download content for, and
+- Our pull secret from above. The pull secret only needsto be specified on the
+  first run as it will be saved and used for future runs.
 
 If you do not specify the OpenShift version when prompted, it will default to
 the latest stable version. You can also specify the version in the format of
@@ -62,9 +82,9 @@ want a specific z-stream release, you can also specify the version as `x.y.z`
 (e.g. `4.12.30`).
 
 ```bash
-podman pull ghcr.io/jaredhocutt/ocp4-disconnected:latest
+podman pull ghcr.io/RedHatGov/ocp4-disconnected:latest
 
-podman run -it --rm --name ocp4-disconnected --platform linux/amd64 --volume /mnt/ocp4_data:/mnt/data:z ghcr.io/jaredhocutt/ocp4-disconnected:latest
+podman run -it --rm --name ocp4-disconnected --platform linux/amd64 --volume /mnt/ocp4_data:/mnt/data:z ghcr.io/RedHatGov/ocp4-disconnected:latest
 ```
 
 After the tool finishes, all of the content we need is in a single tar file at
