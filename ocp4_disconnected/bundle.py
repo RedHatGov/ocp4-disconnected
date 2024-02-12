@@ -248,6 +248,10 @@ class Bundle():
 
 
 def get_pull_secret(ctx, param, value):
+    output_dir = ctx.params.get('output_dir')
+    if output_dir is None:
+        raise click.ClickException('When specifying --pull-secret you must also provide --output-dir')
+
     output_path = Path(ctx.params['output_dir']).joinpath('pull-secret.json')
 
     if output_path.is_file() and value is None:
@@ -267,7 +271,7 @@ def get_pull_secret(ctx, param, value):
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option('--openshift-version', prompt='OpenShift Version', required=True, default='latest',
               help='The version of OpenShift (e.g. 4.12, 4.12.23, latest) you would like to create an air-gapped package for')
-@click.option('--output-dir', prompt='Output Directory', is_eager=True, required=True,
+@click.option('--output-dir', prompt='Output Directory', required=True,
               help='The directory to output the content needed for an air-gapped install')
 @click.option('--pull-secret', required=False, callback=get_pull_secret,
               help='The pull secret used to pull images from Red Hat')
@@ -281,4 +285,5 @@ def main(openshift_version, pull_secret, output_dir):
     b = Bundle(openshift_version, output_dir, pull_secret)
     b.bundle()
 
-main()
+if __name__ == '__main__':
+    main()
