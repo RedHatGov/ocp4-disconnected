@@ -62,7 +62,7 @@ Once your key pair is in place, create the simulated disconnected environment
 using the CloudFormation script.
 
 ```bash
-curl https://raw.githubusercontent.com/RedHatGov/ocp4-disconnected/main/hack/cloudformation.yaml -o /tmp/ocp4-disconnected-cf.yaml
+curl https://raw.githubusercontent.com/redhatgov/ocp4-disconnected/main/hack/cloudformation.yaml -o /tmp/ocp4-disconnected-cf.yaml
 
 aws cloudformation create-stack \
     --stack-name ocp4-disconnected \
