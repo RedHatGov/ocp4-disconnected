@@ -1,10 +1,10 @@
-FROM registry.access.redhat.com/ubi8/python-311:latest
+FROM registry.access.redhat.com/ubi9/python-311:latest
 
 ENV PYTHONPATH=/opt/app-root/src:$PYTHONPATH
 
 USER root
 
-RUN yum install --disablerepo=* --enablerepo=ubi-8-appstream-rpms --enablerepo=ubi-8-baseos-rpms -y \
+RUN yum install --disablerepo=* --enablerepo=ubi-9-appstream-rpms --enablerepo=ubi-9-baseos-rpms -y \
         yum-utils \
     && rm -rf /var/cache/yum
 
